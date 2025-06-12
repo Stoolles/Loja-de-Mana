@@ -1,1 +1,1 @@
-Canonico na historia btw
+https://stoolles.github.io/Loja-de-Mana/
