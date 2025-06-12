@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faça sua Mana!</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #000000; 
+            color: #00BFFF; 
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 1rem;
+        }
+    
+        .container {
+            background-color: #444444; 
+            padding: 2.5rem;
+            border-radius: 1.5rem;
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.5);
+            max-width: 90%;
+            width: 500px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            transition: background-color 0.5s ease-in-out; 
+        }
+        
+        .title {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: #00BFFF; 
+            margin-bottom: 1.5rem;
+        }
+    
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background-color: #555555;
+            border-radius: 1rem;
+        }
+      
+        .stats p {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #DDDDDD;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        
+        #gnomeCountLabel { 
+            color: #00FF00; 
+        }
+        
+        #potionCountLabel { 
+            color: #FF0000; 
+        }
+        
+        #goldCountLabel { 
+            color: #FFFF00; 
+        }
+        #manaCountLabel { 
+            color: #00BFFF; 
+        }
+        .stats span {
+            font-size: 1.5rem;
+            color: #FFFFFF; 
+        }
+        .actions {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+        .actions button {
+            background-color: #22c55e; 
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 0.75rem;
+            font-size: 1.125rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2); 
+        }
+        .actions button:hover:not(:disabled) {
+            background-color: #16a34a; 
+            transform: translateY(-2px);
+        }
+        .actions button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+        .actions button:disabled {
+            background-color: #6b7280; 
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        .message {
+            min-height: 2.5rem;
+            font-size: 1rem;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        .message.success {
+            background-color: #bbf7d0; 
+            color: #14532d; 
+        }
+        .message.error {
+            background-color: #fca5a5; 
+            color: #7f1d1d; 
+        }
+
+        .container.no-mana-state {
+            background-color: #880000; 
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                padding: 1.5rem;
+            }
+            .title {
+                font-size: 1.75rem;
+            }
+            .stats {
+                grid-template-columns: 1fr;
+            }
+            .stats p {
+                font-size: 1rem;
+            }
+            .stats span {
+                font-size: 1.25rem;
+            }
+            .actions button {
+                font-size: 1rem;
+                padding: 0.75rem 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container" id="gameContainer">
+        <h1 class="title">FAZ SUA MANA AÍ! </h1>
+        <div class="stats">
+            <p><span id="gnomeCountLabel">Magos 🧝</span> <span id="gnomeCount">1</span></p>
+            <p><span id="potionCountLabel">Poções de Mana 🥤​</span> <span id="potionCount">0</span></p>
+            <p><span id="goldCountLabel">Moedas 💰</span> <span id="goldCount">0</span></p>
+            <p><span id="manaCountLabel">Mana Disponível 💧</span> <span id="manaCount">100</span></p>
+            <p>Nível Atual: <span id="gameLevel">1</span></p>
+        </div>
+        <div class="actions">
+            <button id="sellPotionsBtn">Vender 10 Poções (100 Moedas)</button>
+            <button id="hireGnomeBtn">Contratar Mago (200 Moedas)</button>
+            <button id="buyManaBtn">Comprar 50 Mana (50 Moedas)</button>
+            <button id="buyUpgrade1Btn">Melhoria Mesa de Poção (Nível 1 - 500 Moedas)</button>
+            <button id="buyUpgrade2Btn">Treinamento de Mago (Nível 1 - 1000 Moedas)</button>
+        </div>
+        <div id="messageBox" class="message"></div>
+    </div>
+
+    <script>
+        let gnomes = 1; 
+        let potions = 0;
+        let gold = 0; 
+        let mana = 100;
+        let gameLevel = 1; 
+
+        let basePotionProductionTime = 5000; 
+        let manaConsumptionPerPotion = 1; 
+        let potionSellAmount = 10; 
+        let potionSellValue = 100; 
+        let hireGnomeCost = 200; 
+        let manaBuyAmount = 50; 
+        let manaBuyCost = 50; 
+
+        let cauldronLevel = 0;
+        const cauldronUpgradeCosts = [500, 1500, 5000, 10000, 25000, 50000, 100000]; 
+        const cauldronEfficiencyPerLevel = 0.05; 
+        const cauldronMaxLevel = cauldronUpgradeCosts.length; 
+
+        let magoTrainingLevel = 0;
+        const magoTrainingCosts = [1000, 30000, 100000, 500000]; 
+        const manaConsumptionMultipliers = [0.5, 0.25, 0.125, 0.0625];
+
+        const gnomeCountSpan = document.getElementById('gnomeCount');
+        const potionCountSpan = document.getElementById('potionCount');
+        const goldCountSpan = document.getElementById('goldCount');
+        const manaCountSpan = document.getElementById('manaCount');
+        const gameLevelSpan = document.getElementById('gameLevel'); 
+        const messageBox = document.getElementById('messageBox');
+        const sellPotionsBtn = document.getElementById('sellPotionsBtn');
+        const hireGnomeBtn = document.getElementById('hireGnomeBtn');
+        const buyManaBtn = document.getElementById('buyManaBtn');
+        const buyCauldronUpgradeBtn = document.getElementById('buyUpgrade1Btn');
+        const buyMagoTrainingUpgradeBtn = document.getElementById('buyUpgrade2Btn');
+        const gameContainer = document.getElementById('gameContainer'); 
+
+        let productionIntervalId;
+
+        function updateUI() {
+            gnomeCountSpan.textContent = gnomes;
+            potionCountSpan.textContent = potions;
+            goldCountSpan.textContent = gold;
+            manaCountSpan.textContent = mana;
+            gameLevelSpan.textContent = gameLevel; 
+
+            sellPotionsBtn.disabled = potions < potionSellAmount;
+            hireGnomeBtn.disabled = gold < hireGnomeCost;
+            buyManaBtn.disabled = gold < manaBuyCost;
+
+            if (cauldronLevel < cauldronMaxLevel) {
+                const nextCauldronCost = cauldronUpgradeCosts[cauldronLevel];
+                buyCauldronUpgradeBtn.disabled = gold < nextCauldronCost;
+                buyCauldronUpgradeBtn.textContent = `Melhoria Mesa de Poção (Nível ${cauldronLevel + 1} - ${nextCauldronCost} Moedas)`;
+            } else {
+                buyCauldronUpgradeBtn.disabled = true;
+                buyCauldronUpgradeBtn.textContent = " Mesa de Poção no Nível Máximo!";
+            }
+
+            if (magoTrainingLevel < magoTrainingCosts.length) {
+                const nextMagoCost = magoTrainingCosts[magoTrainingLevel];
+                buyMagoTrainingUpgradeBtn.disabled = gold < nextMagoCost;
+                buyMagoTrainingUpgradeBtn.textContent = `Treinamento de Mago (Nível ${magoTrainingLevel + 1} - ${nextMagoCost} Moedas)`;
+            } else {
+                buyMagoTrainingUpgradeBtn.disabled = true;
+                buyMagoTrainingUpgradeBtn.textContent = "Treinamento Máximo!";
+            }
+
+            if (mana <= 0) {
+                gameContainer.classList.add('no-mana-state');
+            } else {
+                gameContainer.classList.remove('no-mana-state');
+            }
+        }
+
+        function showMessage(msg, isError = false) {
+            messageBox.textContent = msg;
+            messageBox.className = `p-2 mt-4 text-center rounded-lg text-sm md:text-base ${isError ? 'bg-red-300 text-red-800' : 'bg-green-300 text-green-800'}`;
+            setTimeout(() => {
+                messageBox.textContent = '';
+                messageBox.className = 'message'; 
+            }, 3000);
+        }
+
+        function startProduction() {
+            if (productionIntervalId) {
+                clearInterval(productionIntervalId);
+            }
+
+            let currentProductionTime = basePotionProductionTime * (1 - cauldronLevel * cauldronEfficiencyPerLevel);
+            currentProductionTime = Math.max(500, currentProductionTime); 
+
+            productionIntervalId = setInterval(() => {
+                let actualManaConsumptionPerPotion = manaConsumptionPerPotion; 
+                if (magoTrainingLevel > 0) {
+                    actualManaConsumptionPerPotion = manaConsumptionPerPotion * manaConsumptionMultipliers[magoTrainingLevel - 1];
+                }
+
+                const totalManaNeeded = gnomes * actualManaConsumptionPerPotion;
+
+                if (mana >= totalManaNeeded) {
+                    potions += gnomes; 
+                    mana -= totalManaNeeded; 
+                } else if (mana > 0) {
+                    const producingMages = Math.floor(mana / actualManaConsumptionPerPotion);
+                    if (producingMages > 0) {
+                        potions += producingMages; 
+                        mana = 0; 
+                        showMessage(`Mana baixa! Apenas ${producingMages} mago(s) está(ão) produzindo.`, true);
+                    } else {
+                        showMessage("Sem mana! Os magos pararam de produzir poções.", true);
+                    }
+                } else {
+                    showMessage("Sem mana! Os magos pararam de produzir poções.", true);
+                }
+                updateUI(); 
+            }, currentProductionTime);
+
+            updateUI(); 
+        }
+
+        sellPotionsBtn.addEventListener('click', () => {
+            if (potions >= potionSellAmount) {
+                potions -= potionSellAmount;
+                gold += potionSellValue;
+                showMessage(`Você vendeu ${potionSellAmount} poções por ${potionSellValue} Moedas!`);
+            } else {
+                showMessage(`Você não tem ${potionSellAmount} poções para vender.`, true);
+            }
+            updateUI();
+        });
+
+        hireGnomeBtn.addEventListener('click', () => {
+            if (gold >= hireGnomeCost) {
+                gold -= hireGnomeCost;
+                gnomes++;
+                showMessage(`Você contratou um novo mago! Agora você tem ${gnomes} magos.`);
+                startProduction(); 
+            } else {
+                showMessage(`Você não tem Moedas suficiente para contratar um mago (Precisa de ${hireGnomeCost} Moedas).`, true);
+            }
+            updateUI();
+        });
+
+        buyManaBtn.addEventListener('click', () => {
+            if (gold >= manaBuyCost) {
+                gold -= manaBuyCost;
+                mana += manaBuyAmount;
+                showMessage(`Você comprou ${manaBuyAmount} mana!`);
+            } else {
+                showMessage(`Você não tem Moedas suficiente para comprar mana (Precisa de ${manaBuyCost} Moedas).`, true);
+            }
+            updateUI();
+        });
+
+        buyCauldronUpgradeBtn.addEventListener('click', () => {
+            if (cauldronLevel < cauldronMaxLevel) {
+                const currentCost = cauldronUpgradeCosts[cauldronLevel];
+                if (gold >= currentCost) {
+                    gold -= currentCost;
+                    cauldronLevel++;
+                    showMessage(`Mesa de Poção melhorado para o Nível ${cauldronLevel}! Poções são produzidas ${cauldronLevel * 5}% mais rápido.`);
+                    startProduction(); 
+                } else {
+                    showMessage(`Você não tem Moedas suficiente para esta melhoria (Precisa de ${currentCost} Moedas).`, true);
+                }
+            } else {
+                showMessage("A Mesa de Poção já está no nível máximo!", true);
+            }
+            updateUI();
+        });
+
+        buyMagoTrainingUpgradeBtn.addEventListener('click', () => {
+            if (magoTrainingLevel < magoTrainingCosts.length) {
+                const currentCost = magoTrainingCosts[magoTrainingLevel];
+                if (gold >= currentCost) {
+                    gold -= currentCost;
+                    magoTrainingLevel++;
+                    showMessage(`Treinamento de Mago Nível ${magoTrainingLevel} concluído! Produção agora é ${Math.pow(2, magoTrainingLevel)}x mais eficiente.`);
+                    startProduction(); 
+                } else {
+                    showMessage(`Você não tem Moedas suficiente para esta melhoria (Precisa de ${currentCost} Moedas).`, true);
+                }
+            } else {
+                showMessage("Você já alcançou o treinamento máximo para os magos!", true);
+            }
+            updateUI();
+        });
+
+        startProduction();
+    </script>
+</body>
+</html>
